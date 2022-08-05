@@ -1,0 +1,12 @@
+{
+  "user": {
+    "stage": null,
+    "campus": null,
+    "grade": null,
+    "type": null,
+    "notifications_preferences": {
+      "lesson_start": false,
+      "lesson_end": false
+    }
+  }
+}
