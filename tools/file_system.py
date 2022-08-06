@@ -5,7 +5,6 @@ import vk_api.vk_api
 from vk_api.utils import get_random_id
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-
 colors = {
     "blue": VkKeyboardColor.PRIMARY,
     "green": VkKeyboardColor.POSITIVE,
@@ -35,6 +34,25 @@ def get_screen(screen_id: str):
             keyboard.add_button(j[0], colors[j[1]])
 
         keyboard.add_line() if data[-1] != i else None
+
+    return keyboard.get_keyboard()
+
+
+def get_auto_screen(data: list, buttons_per_row: int = 3, color: str = "white", cancel_button: str = ""):
+    keyboard = VkKeyboard(one_time=False)
+    buttons_on_current_row = 0
+
+    for i in data:
+        keyboard.add_button(i, colors[color])
+        buttons_on_current_row += 1
+
+        if buttons_on_current_row >= buttons_per_row and data[-1] != i:
+            keyboard.add_line()
+            buttons_on_current_row = 0
+
+    if cancel_button != "":
+        keyboard.add_line()
+        keyboard.add_button(cancel_button, 'red')
 
     return keyboard.get_keyboard()
 
@@ -136,11 +154,11 @@ class User:
         )
 
     @check
-    def stage(self, stage: str):
+    def stage(self, stage: str, override_msg: str = "", override_screen=None):
         self.vk.messages.send(
             peer_id=self.uid,
-            message=File('../files/messages.json').get(stage),
-            keyboard=get_screen(stage),
+            message=File('../files/messages.json').get(stage if override_msg == "" else override_msg),
+            keyboard=get_screen(stage) if override_screen is None else override_screen,
             random_id=get_random_id()
         )
         self.update({"stage": stage})
@@ -149,7 +167,10 @@ class User:
 class UsersDatabase(File):
     @check
     def update_user(self, uid: int, payload: dict):
-        self.update({str(uid): payload})
+        user = self.contents.get(str(uid))
+        user.update(payload)
+        # self.contents[str(uid)] = user
+        self.update({str(uid): user})
 
     @check
     def user(self, uid: int, vk: vk_api):
@@ -161,6 +182,7 @@ class UsersDatabase(File):
 
     @check
     def check_user(self, uid: int):
+        self.reload()
         return str(uid) in self.contents
 
     @check
